@@ -5,33 +5,51 @@ import java.util.*;
 public class CaminhaoGuloso {
 
     public static void carregarCaminhao(int capacidade, Map<Integer, Integer> itens) {
-        List<Map.Entry<Integer, Integer>> ordenados = itens.entrySet().stream()
+        List<Map.Entry<Integer, Integer>> ordenados = ordenarPorVolume(itens);
+        Map<Integer, Integer> carga = montarCarga(capacidade, ordenados);
+        int volumeUsado = carga.values().stream().mapToInt(Integer::intValue).sum();
+
+        exibirResultado(capacidade, carga, volumeUsado);
+    }
+
+    private static List<Map.Entry<Integer, Integer>> ordenarPorVolume(Map<Integer, Integer> itens) {
+        return itens.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue())
                 .toList();
+    }
 
-        Map.Entry<Integer, Integer> menorItem = ordenados.get(0);
-
+    private static Map<Integer, Integer> montarCarga(int capacidade, List<Map.Entry<Integer, Integer>> ordenados) {
         Map<Integer, Integer> carga = new LinkedHashMap<>();
         int volumeUsado = 0;
         int contador = 0;
 
-        while (volumeUsado + menorItem.getValue() <= capacidade) {
-            carga.put(contador++, menorItem.getValue());
-            volumeUsado += menorItem.getValue();
+        int menorVolume = ordenados.get(0).getValue();
+        while (volumeUsado + menorVolume <= capacidade) {
+            carga.put(contador++, menorVolume);
+            volumeUsado += menorVolume;
         }
 
         carga.remove(--contador);
-        volumeUsado -= menorItem.getValue();
+        volumeUsado -= menorVolume;
 
-        int espacoRestante = capacidade - volumeUsado;
-        for (int i = ordenados.size() - 1; i >= 0; i--) {
-            if (ordenados.get(i).getValue() <= espacoRestante) {
-                carga.put(contador, ordenados.get(i).getValue());
-                volumeUsado += ordenados.get(i).getValue();
-                break;
-            }
+        Integer itemQueCabe = encontrarItemQueCabe(ordenados, capacidade - volumeUsado);
+        if (itemQueCabe != null) {
+            carga.put(contador, itemQueCabe);
         }
 
+        return carga;
+    }
+
+    private static Integer encontrarItemQueCabe(List<Map.Entry<Integer, Integer>> ordenados, int espacoRestante) {
+        for (int i = ordenados.size() - 1; i >= 0; i--) {
+            if (ordenados.get(i).getValue() <= espacoRestante) {
+                return ordenados.get(i).getValue();
+            }
+        }
+        return null;
+    }
+
+    private static void exibirResultado(int capacidade, Map<Integer, Integer> carga, int volumeUsado) {
         System.out.println("Capacidade do caminhão: " + capacidade + "L");
         System.out.println("\nItens carregados (" + carga.size() + " itens):");
         carga.forEach((id, volume) -> System.out.println("  Item " + id + " -> " + volume + "L"));
